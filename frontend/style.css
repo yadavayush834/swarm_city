@@ -1,0 +1,23 @@
+*{box-sizing:border-box}body{margin:0;background:#0b1020;color:#e6ebff;font-family:Inter,system-ui,Arial}
+header{padding:16px 22px;border-bottom:1px solid #1e2a4d;background:linear-gradient(90deg,#0b1020,#131c3f)}
+.logo{font-weight:800;letter-spacing:2px;font-size:20px}.logo span{color:#5eead4}
+.sub{opacity:.7;font-size:13px;margin-top:4px}
+main{display:flex;gap:18px;padding:18px;max-width:1200px;margin:0 auto}
+.map-wrap{flex:1}.panel{width:340px;display:flex;flex-direction:column;gap:14px}
+canvas{width:100%;border-radius:14px;background:#0e1430;border:1px solid #223060;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;opacity:.9}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.road{background:#334155}.bld{background:#64748b}.fire{background:#f97316}.rub{background:#3f3f46}.vic{background:#ef4444}.shel{background:#22c55e}.bot{background:#38bdf8}
+.card{background:#111a3a;border:1px solid #223060;border-radius:14px;padding:14px}
+.card h3{margin:0 0 10px;font-size:14px;letter-spacing:1px;text-transform:uppercase;opacity:.8}
+.row{display:flex;align-items:center;justify-content:space-between;margin:8px 0;gap:10px}
+select,input[type=range]{flex:1}select{background:#0b1330;color:#fff;border:1px solid #2b3b6b;border-radius:8px;padding:6px}
+.btns{display:flex;gap:8px}button{background:#1e2a5a;color:#fff;border:1px solid #2e417a;border-radius:10px;padding:8px 10px;cursor:pointer}
+button.primary{background:#0ea5e9;border-color:#0ea5e9;font-weight:700}
+button:hover{filter:brightness(1.2)}
+.chk{font-size:13px;opacity:.9}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);text-align:center}
+.stats b{font-size:22px;display:block}.stats span{font-size:11px;opacity:.7}
+#log{height:180px;overflow:auto;font-family:monospace;font-size:12px;background:#070c22;border-radius:8px;padding:8px;border:1px solid #1c2a5c}
+#log div{margin:2px 0}.small{font-size:12px;opacity:.85}a{color:#5eead4}
+@media(max-width:900px){main{flex-direction:column}.panel{width:100%}}

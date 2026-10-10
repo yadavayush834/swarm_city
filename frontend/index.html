@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMNIMIND — Swarm City Rescue</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <div class="logo">OMNIMIND <span>SWARM CITY</span></div>
+  <div class="sub">real-time disaster-response simulator · every AI family wired in</div>
+</header>
+<main>
+  <section class="map-wrap">
+    <canvas id="city" width="640" height="640"></canvas>
+    <div class="legend">
+      <span><i class="dot road"></i>road</span>
+      <span><i class="dot bld"></i>building</span>
+      <span><i class="dot fire"></i>fire</span>
+      <span><i class="dot rub"></i>rubble</span>
+      <span><i class="dot vic"></i>victim</span>
+      <span><i class="dot shel"></i>shelter</span>
+      <span><i class="dot bot"></i>robot</span>
+    </div>
+  </section>
+  <aside class="panel">
+    <div class="card">
+      <h3>Controls</h3>
+      <div class="row">
+        <label>Algorithm</label>
+        <select id="algo">
+          <option value="astar">A*</option>
+          <option value="bfs">BFS</option>
+          <option value="ucs">UCS</option>
+          <option value="greedy">Greedy</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Speed</label>
+        <input id="speed" type="range" min="1" max="20" value="8" />
+      </div>
+      <div class="row btns">
+        <button id="newCity">New City</button>
+        <button id="run" class="primary">Run Rescue</button>
+        <button id="stop">Stop</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="showPath" checked /> show paths</label>
+    </div>
+    <div class="card stats">
+      <div><b id="stRescued">0</b><span>rescued</span></div>
+      <div><b id="stSteps">0</b><span>steps</span></div>
+      <div><b id="stCost">0</b><span>cost</span></div>
+      <div><b id="stVictims">0</b><span>left</span></div>
+    </div>
+    <div class="card">
+      <h3>AI feed</h3>
+      <div id="log"></div>
+    </div>
+    <div class="card small">
+      Backend: <code>python3 main.py</code> runs all 40+ algorithms.
+      This UI runs Search + CSP assignment + Fuzzy speed live in JS.
+      <a href="https://github.com/yadavayush834/swarm_city" target="_blank">swarm_city repo</a>
+    </div>
+  </aside>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
