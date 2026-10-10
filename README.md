@@ -33,7 +33,8 @@ python3 bridge/server.py --port 8130 --seed 7
 python3 tools/osm_import.py --place "Connaught Place, New Delhi" --n 40 --out frontend/maps/cp.json
 # open http://localhost:8000/?map=maps/cp.json&run=1
 ```
-- `frontend/maps/cp.json` (Connaught Place, 1930 OSM ways) is included
+- `frontend/maps/cp.json` (Connaught Place) and `frontend/maps/olddelhi.json` (dense Old Delhi, N=64) are included
+- Open_dense map directly: `http://localhost:8000/?map=maps/olddelhi.json&run=1`
 - `python3 tools/export_city.py` dumps backend map to `frontend/city.json`
 
 ## Where each algorithm lives
