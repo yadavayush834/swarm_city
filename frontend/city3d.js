@@ -546,7 +546,7 @@ function liveConnect(){
   ws.onopen=()=>{
     opened=true; clearTimeout(giveUp); setLive(true);
     log('LIVE: streaming the real Python ai/* sim (A*, CSP, Kalman, fuzzy)');
-    if(new URLSearchParams(location.search).get('run')==='1') liveSend({cmd:'run'});
+    log('press Run Rescue when ready');
   };
   ws.onmessage=ev=>{
     let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
@@ -783,10 +783,7 @@ if(Q.get('dn')){ const p=parseFloat(Q.get('dn')); if(!isNaN(p)) dn.t=((p%1)+1)%1
 if(Q.get('rain')==='1'){ rain.on=true; if(rain.pts) rain.pts.visible=true; $('rainTgl').textContent='Rain: on'; }
 if(Q.get('map')&&!Q.has('live')) loadMap(Q.get('map')).catch(e=>log('map load failed, using generated city'));
 if(Q.has('live')) liveConnect();
-else if(Q.get('run')==='1'){
-  for(let k=0;k<70;k++){ if(!victims.length) break; update(0.5); }
-  running=true; $('run').textContent='Pause'; log('rescue started');
-}
+// NOTE: no autostart — the map loads idle, you press Run Rescue.
 document.getElementById('loader').style.display='none';
 clearTimeout(window.__bootTimer);
 window.__city3d_booted=true;
