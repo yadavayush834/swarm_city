@@ -10,7 +10,7 @@
   #rmap{position:fixed;inset:0;background:#0e1526;z-index:0}
   .panel.floating{z-index:1000}
   .legend.floating-bottom{z-index:1000}
-  .overlay-title{z-index:1000}
+  .overlay-title{z-index:1000;left:64px}
   .mk{display:flex;align-items:center;justify-content:center;font-weight:800;font-family:Inter,system-ui,Arial;color:#fff}
   .mk.drone{width:22px;height:22px;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 0 8px var(--c);font-size:11px}
   .mk.vic{width:20px;height:20px;border-radius:50%;background:#ef4444;border:2px solid #fff;font-size:12px;animation:pulse 1s infinite}
@@ -54,6 +54,14 @@
       <button id="newCity">New Hazards</button>
       <button id="run" class="primary">Run Rescue</button>
       <button id="stop">Stop</button>
+    </div>
+    <div class="row">
+      <label>Theme</label>
+      <div class="tdots">
+        <button class="tdot" data-t="midnight" title="Midnight teal" aria-label="Midnight teal"></button>
+        <button class="tdot" data-t="amber" title="Ember amber" aria-label="Ember amber"></button>
+        <button class="tdot" data-t="violet" title="Nebula violet" aria-label="Nebula violet"></button>
+      </div>
     </div>
     <label class="chk"><input type="checkbox" id="showPath" checked /> show paths</label>
   </div>

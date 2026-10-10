@@ -222,6 +222,15 @@ $('stop').onclick=()=>{ running=false; $('run').textContent='Run Rescue'; wipeHa
 $('newCity').onclick=()=>{ running=false; $('run').textContent='Run Rescue'; wipeHazards(); topUpHazards(); spawnDrones(); rebuildMarkers(); log('new hazards scattered — press Run Rescue'); };
 $('showPath').onchange=()=>robots.forEach(drawPath);
 $('mapSel').onchange=e=>loadMap(e.target.value);
+// accent theme switcher (persisted)
+(function(){
+  const dots=[...document.querySelectorAll('.tdot')];
+  const apply=t=>{ document.body.dataset.theme=t; try{localStorage.setItem('swarm-theme',t);}catch(e){}
+    dots.forEach(x=>x.classList.toggle('active',x.dataset.t===t)); };
+  dots.forEach(b=>b.onclick=()=>apply(b.dataset.t));
+  let saved='midnight'; try{ saved=localStorage.getItem('swarm-theme')||'midnight'; }catch(e){}
+  apply(saved);
+})();
 (function boot(){
   const q=new URLSearchParams(location.search);
   const url=q.get('map')||($('mapSel')&&$('mapSel').value)||'maps/olddelhi.json';

@@ -114,12 +114,21 @@ function draw(t){
     else if(v===6){ ctx.fillStyle='#14532d'; ctx.fillRect(x,y,TILE,TILE); }
     else if(v===2){ ctx.fillStyle='#27272a'; ctx.fillRect(x,y,TILE,TILE); ctx.fillStyle='#52525b';
       ctx.fillRect(x+4,y+8,8,6); ctx.fillRect(x+14,y+14,10,7); }
-    else if(v===3){ const f=Math.sin(t/120+i+j)*4; ctx.fillStyle='#7c2d12'; ctx.fillRect(x,y,TILE,TILE);
-      ctx.fillStyle='#f97316'; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2,9+f*.4,0,7); ctx.fill();
-      ctx.fillStyle='#fde047'; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2,4,0,7); ctx.fill(); }
-    else if(v===4){ ctx.fillStyle='#0f172a'; ctx.fillRect(x,y,TILE,TILE);
-      const p=6+Math.sin(t/200)*2; ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(x+TILE/2,y+TILE/2,p,0,7); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('!',x+TILE/2,y+TILE/2+4); }
+    else if(v===3){ const f=Math.sin(t/120+i+j)*4, cx=x+TILE/2, cy=y+TILE/2;
+      ctx.fillStyle='#2a1206'; ctx.fillRect(x,y,TILE,TILE);
+      const g=ctx.createRadialGradient(cx,cy,1,cx,cy,16);
+      g.addColorStop(0,'rgba(253,224,71,.9)'); g.addColorStop(0.45,'rgba(249,115,22,.7)'); g.addColorStop(1,'rgba(249,115,22,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,16,0,7); ctx.fill();
+      ctx.fillStyle='#f97316'; ctx.beginPath(); ctx.arc(cx,cy-2,7+f*0.3,0,7); ctx.fill();
+      ctx.fillStyle='#fef3c7'; ctx.beginPath(); ctx.arc(cx,cy-3,3,0,7); ctx.fill(); }
+    else if(v===4){ const cx=x+TILE/2, cy=y+TILE/2;
+      ctx.fillStyle='#160a14'; ctx.fillRect(x,y,TILE,TILE);
+      const p=6+Math.sin(t/200)*2;
+      const g2=ctx.createRadialGradient(cx,cy,1,cx,cy,13);
+      g2.addColorStop(0,'rgba(239,68,68,.85)'); g2.addColorStop(1,'rgba(239,68,68,0)');
+      ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(cx,cy,13,0,7); ctx.fill();
+      ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(cx,cy,p,0,7); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('!',cx,cy+4); }
     else if(v===5){ ctx.fillStyle='#052e16'; ctx.fillRect(x,y,TILE,TILE); ctx.fillStyle='#22c55e';
       ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.fillText('H',x+TILE/2,y+TILE/2+5); }
   }
@@ -141,6 +150,15 @@ function loop(t){ draw(t||0); if(running){ animT++; const sp=21-$('speed').value
 $('newCity').onclick=()=>{ genCity(); };
 $('run').onclick=()=>{ running=!running; $('run').textContent=running?'Pause':'Run Rescue'; log(running?'rescue started':'paused'); };
 $('stop').onclick=()=>{ running=false; $('run').textContent='Run Rescue'; genCity(); };
+// accent theme switcher (persisted)
+(function(){
+  const dots=[...document.querySelectorAll('.tdot')];
+  const apply=t=>{ document.body.dataset.theme=t; try{localStorage.setItem('swarm-theme',t);}catch(e){}
+    dots.forEach(x=>x.classList.toggle('active',x.dataset.t===t)); };
+  dots.forEach(b=>b.onclick=()=>apply(b.dataset.t));
+  let saved='midnight'; try{ saved=localStorage.getItem('swarm-theme')||'midnight'; }catch(e){}
+  apply(saved);
+})();
 genCity(); requestAnimationFrame(loop);
 // autostart for screenshots / demos: open index.html?run=1
 if(new URLSearchParams(location.search).get('run')==='1'){
