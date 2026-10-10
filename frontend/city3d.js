@@ -30,6 +30,7 @@ const dn={t:0.78,auto:true,period:240};
 
 function genModel(){
   seed = (Math.random()*1e9)|0;
+  _giant=null;
   grid = Array.from({length:N},()=>Array(N).fill(BLD));
   for(let i=0;i<N;i++) for(let j=0;j<N;j++){
     if(i%5===0||j%5===0) grid[i][j]=ROAD;
@@ -43,12 +44,35 @@ function genModel(){
   for(let k=0;k<8;k++){ const [x,y]=free(); grid[x][y]=VIC; victims.push({x,y,id:k,carried:false,saved:false}); }
   steps=0; cost=0; rescued=0;
 }
-// scatter hazards onto free cells (roadsOnly keeps real-map streets intact)
+// scatter hazards onto free cells (roadsOnly keeps real-map streets intact;
+// on real maps, only the giant connected component is used so every
+// victim/fire is reachable by the drones)
+let _giant=null;
+function giantComponent(){
+  const seen=new Set(); let best=new Set();
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){
+    const k=i*N+j;
+    if(seen.has(k)||!passable(i,j)) continue;
+    const cur=new Set([k]), st=[[i,j]];
+    seen.add(k);
+    while(st.length){
+      const [x,y]=st.pop();
+      for(const [nx,ny] of neigh(x,y)){
+        const kk=nx*N+ny;
+        if(!seen.has(kk)){ seen.add(kk); cur.add(kk); st.push([nx,ny]); }
+      }
+    }
+    if(cur.size>best.size) best=cur;
+  }
+  return best;
+}
 function scatter(kind,count,roadsOnly=false){
+  if(roadsOnly&&!_giant) _giant=giantComponent();
   let placed=0,guard=0;
   while(placed<count&&guard<N*N*30){
     guard++;
     const x=1+((rnd()*(N-2))|0), y=1+((rnd()*(N-2))|0);
+    if(roadsOnly&&!_giant.has(x*N+y)) continue;
     const ok=roadsOnly?grid[x][y]===ROAD:(grid[x][y]===BLD||grid[x][y]===ROAD);
     if(ok){ grid[x][y]=kind; placed++; }
   }
@@ -79,6 +103,7 @@ async function loadMap(url){
   const n=m.n||Math.round(Math.sqrt(m.grid.length));
   if(!m.grid||m.grid.length!==n||m.grid[0].length!==n) throw new Error('bad grid');
   seed=(Math.random()*1e9)|0;
+  _giant=null;
   setWorldSize(n);
   grid=m.grid.map(row=>row.slice());
   ensureShelters();
@@ -247,19 +272,20 @@ function buildWorld(){
   for(let i=0;i<N;i++) for(let j=0;j<N;j++){
     const [x,z]=cellXZ(i,j), v=grid[i][j];
     if(v===BLD){
-      const h=2+rnd()*4.5, m=sideMats[(rnd()*sideMats.length)|0];
+      const h=(2+rnd()*4.5)*CELL/2, m=sideMats[(rnd()*sideMats.length)|0];
       const b=new THREE.Mesh(new THREE.BoxGeometry(CELL*0.8,h,CELL*0.8),
         [m,m,roofMat,roofMat,m,m]);
       b.position.set(x,h/2,z); b.castShadow=true; b.receiveShadow=true; world.add(b);
       box(CELL*0.86,0.15,CELL*0.86,roofMat,x,0.07,z,false); // foundation
     } else if(v===PARK){
       box(CELL*0.9,0.12,CELL*0.9,parkMat,x,0.06,z,false);
+      const BS=CELL/2;
       for(let k=0;k<2;k++){
-        const tx=x+(rnd()-0.5)*1.2, tz=z+(rnd()-0.5)*1.2;
-        const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.09,0.5,6),trunkMat);
-        trunk.position.set(tx,0.35,tz); trunk.castShadow=true; world.add(trunk);
-        const leaf=new THREE.Mesh(new THREE.ConeGeometry(0.42,1.0,7),leafMat);
-        leaf.position.set(tx,1.0,tz); leaf.castShadow=true; world.add(leaf);
+        const tx=x+(rnd()-0.5)*1.2*BS, tz=z+(rnd()-0.5)*1.2*BS;
+        const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.06*BS,0.09*BS,0.5*BS,6),trunkMat);
+        trunk.position.set(tx,0.35*BS,tz); trunk.castShadow=true; world.add(trunk);
+        const leaf=new THREE.Mesh(new THREE.ConeGeometry(0.42*BS,1.0*BS,7),leafMat);
+        leaf.position.set(tx,1.0*BS,tz); leaf.castShadow=true; world.add(leaf);
       }
     } else if(v===RUB){
       const p=box(CELL*0.85,0.35,CELL*0.85,rubMat,x,0.17,z);
@@ -273,18 +299,19 @@ function buildWorld(){
     else if(v===VIC){ addVictim(i,j,x,z); }
     else if(v===SHEL){ addShelter(x,z); }
   }
-  // street lamps along roads
+  // street lamps along roads (density scales with map size)
   const poleMat=new THREE.MeshStandardMaterial({color:0x0f172a,roughness:0.7});
-  for(let i=0;i<N;i+=4) for(let j=0;j<N;j+=5){
+  const LS=Math.max(4,Math.round(N/5)), LO=0.7*CELL/2, PH=3*Math.max(0.6,CELL/2);
+  for(let i=0;i<N;i+=LS) for(let j=0;j<N;j+=LS){
     for(const [lx,lz] of [[i,j]]){
       if(!passable(lx,lz)) continue;
       const [x,z]=cellXZ(lx,lz);
-      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,3,6),poleMat);
-      pole.position.set(x+0.7,1.5,z+0.7); pole.castShadow=true; world.add(pole);
+      const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.07,PH,6),poleMat);
+      pole.position.set(x+LO,PH/2,z+LO); pole.castShadow=true; world.add(pole);
       const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8),
         new THREE.MeshBasicMaterial({color:0xffe9a8}));
-      lamp.position.set(x+0.7,3.05,z+0.7); world.add(lamp);
-      glowSprite(0xffdf9e,1.6,x+0.7,3.05,z+0.7).material.opacity=0.35;
+      lamp.position.set(x+LO,PH+0.05,z+LO); world.add(lamp);
+      glowSprite(0xffdf9e,1.6,x+LO,PH+0.05,z+LO).material.opacity=0.35;
     }
   }
   // fire point lights (pool of 4, reassigned to first fires)
