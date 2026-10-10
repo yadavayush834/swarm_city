@@ -21,7 +21,7 @@
   <p><a href="2d.html">Open the 2D version instead</a></p>
 </div>
 <header class="overlay-title">
-  <div class="logo">OMNIMIND <span>SWARM CITY 3D</span></div>
+  <div class="logo">OMNIMIND <span>SWARM CITY 3D</span> <b id="liveBadge">LOCAL SIM</b></div>
   <div class="sub">drag to orbit · scroll to zoom · right-drag to pan</div>
 </header>
 <aside class="panel floating">
@@ -49,6 +49,14 @@
       <button id="viewOrbit">Orbit view</button>
       <button id="viewTop">Top view</button>
     </div>
+    <div class="row btns">
+      <button id="rainTgl">Rain: off</button>
+      <button id="dnTgl">Day/night: on</button>
+    </div>
+    <div class="row">
+      <input id="mapUrl" placeholder="maps/cp.json" />
+      <button id="loadMapBtn">Load map</button>
+    </div>
     <label class="chk"><input type="checkbox" id="showPath" checked /> show paths</label>
     <label class="chk"><input type="checkbox" id="shadowTgl" checked /> shadows</label>
   </div>
@@ -57,6 +65,10 @@
     <div><b id="stSteps">0</b><span>steps</span></div>
     <div><b id="stCost">0</b><span>cost</span></div>
     <div><b id="stVictims">0</b><span>left</span></div>
+  </div>
+  <div class="card">
+    <h3>Tactical map</h3>
+    <canvas id="minimap" width="150" height="150"></canvas>
   </div>
   <div class="card">
     <h3>AI feed</h3>
@@ -81,6 +93,10 @@
     if(!window.__city3d_booted) document.getElementById('webgl-error').hidden = false;
     document.getElementById('loader').style.display = 'none';
   }, 15000);
+  window.addEventListener('error', function(e){
+    var el = document.getElementById('log');
+    if(el){ var d = document.createElement('div'); d.textContent = 'JS error: ' + (e.message||e.error); el.prepend(d); }
+  });
 </script>
 <script type="module" src="city3d.js"></script>
 </body>
