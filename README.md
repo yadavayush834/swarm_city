@@ -3,10 +3,19 @@
 Simulated disaster city where a drone/ground swarm rescues victims.
 Uses EVERY major AI family in one runnable repo, stdlib-only so it runs on your laptop with no GPU.
 
-## Run
+## Run backend (all 40+ algorithms)
 ```
 python3 main.py
 ```
+
+## Run frontend (real animated city)
+```
+cd frontend && python3 -m http.server 8000
+# open http://localhost:8000
+```
+- 20x20 roads/buildings/parks, fires flicker, victims pulse, 3 robots rescue live
+- Switch BFS/A*/UCS/Greedy, speed slider, path overlay, AI feed
+- `python3 tools/export_city.py` dumps backend map to `frontend/city.json`
 
 ## Where each algorithm lives
 - `sim/city.py` — grid world, rendering
