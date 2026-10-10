@@ -27,6 +27,7 @@ function genCity(){
   for(let k=0;k<8;k++){ const [x,y]=free(); grid[x][y]=4; victims.push({x,y,id:k,saved:false}); }
   robots = shelters.map((s,i)=>({x:s.x,y:s.y,path:[],target:null,carry:null,color:['#38bdf8','#f472b6','#a3e635'][i%3]}));
   steps=0;cost=0;rescued=0; updateStats();
+  $('stVictims').textContent=victims.length;
   log(`new city: ${victims.length} victims, ${shelters.length} shelters`);
 }
 
@@ -141,3 +142,7 @@ $('newCity').onclick=()=>{ genCity(); };
 $('run').onclick=()=>{ running=!running; $('run').textContent=running?'Pause':'Run Rescue'; log(running?'rescue started':'paused'); };
 $('stop').onclick=()=>{ running=false; $('run').textContent='Run Rescue'; genCity(); };
 genCity(); requestAnimationFrame(loop);
+// autostart for screenshots / demos: open index.html?run=1
+if(new URLSearchParams(location.search).get('run')==='1'){
+  setTimeout(()=>{ if(!$('run')) return; $('run').click(); }, 400);
+}
