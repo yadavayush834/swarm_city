@@ -16,8 +16,24 @@ cd frontend && python3 -m http.server 8000
 - Three.js 3D dusk city: lit buildings, flickering fires + smoke, tents + beacon shelters, quadcopter drones with spinning rotors
 - Drag to orbit, scroll to zoom, Orbit/Top view buttons, shadows toggle
 - Switch BFS/A*/UCS/Greedy, speed slider, path overlay, AI feed
+- Weather: rain toggle (local drones fly 15% slower), day/night cycle, tactical minimap
 - `2d.html` keeps the lightweight canvas version
-- `?run=1` autostarts, `?fast=1` disables shadows (weak GPUs)
+- `?run=1` autostarts, `?fast=1` disables shadows (weak GPUs), `?dn=0.5` sets time of day, `?rain=1` starts raining
+
+## Live AI bridge (real Python ai/* driving the 3D view)
+```
+python3 bridge/server.py --port 8130 --seed 7
+# open http://localhost:8000/?live=1&run=1
+```
+- Stdlib-only WebSocket server: A* routing, CSP tasking, Kalman-filtered GPS, fuzzy-logic speeds stream at 10 Hz
+- Badge flips LOCAL SIM -> LIVE • BACKEND; falls back to local sim if the bridge is down
+
+## Real maps (OpenStreetMap)
+```
+python3 tools/osm_import.py --place "Connaught Place, New Delhi" --n 40 --out frontend/maps/cp.json
+# open http://localhost:8000/?map=maps/cp.json&run=1
+```
+- `frontend/maps/cp.json` (Connaught Place, 1930 OSM ways) is included
 - `python3 tools/export_city.py` dumps backend map to `frontend/city.json`
 
 ## Where each algorithm lives
