@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMNIMIND — Real Map Rescue</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  #rmap{position:fixed;inset:0;background:#0e1526;z-index:0}
+  .panel.floating{z-index:1000}
+  .legend.floating-bottom{z-index:1000}
+  .overlay-title{z-index:1000}
+  .mk{display:flex;align-items:center;justify-content:center;font-weight:800;font-family:Inter,system-ui,Arial;color:#fff}
+  .mk.drone{width:22px;height:22px;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 0 8px var(--c);font-size:11px}
+  .mk.vic{width:20px;height:20px;border-radius:50%;background:#ef4444;border:2px solid #fff;font-size:12px;animation:pulse 1s infinite}
+  .mk.fire{width:20px;height:20px;border-radius:50%;background:#f97316;border:2px solid #ffd166;font-size:12px;animation:pulse .6s infinite}
+  .mk.shel{width:24px;height:24px;border-radius:6px;background:#16a34a;border:2px solid #fff;font-size:13px}
+  @keyframes pulse{50%{transform:scale(1.35)}}
+  .path-label{background:rgba(7,12,34,.85);color:#fff;border:1px solid #2b3b6b;border-radius:6px;padding:1px 6px;font-size:11px}
+</style>
+</head>
+<body class="view3d">
+<div id="rmap"></div>
+<div id="loader"><div class="spin"></div><p>loading real map…</p></div>
+<header class="overlay-title">
+  <div class="logo">OMNIMIND <span>REAL MAP</span> <b id="liveBadge">LOCAL SIM</b></div>
+  <div class="sub">drag to pan · scroll to zoom · real OpenStreetMap streets</div>
+</header>
+<aside class="panel floating">
+  <div class="card">
+    <h3>Controls</h3>
+    <div class="row">
+      <label>Map</label>
+      <select id="mapSel">
+        <option value="maps/olddelhi.json">Old Delhi (dense)</option>
+        <option value="maps/cp.json">Connaught Place</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Algorithm</label>
+      <select id="algo">
+        <option value="astar">A*</option>
+        <option value="bfs">BFS</option>
+        <option value="ucs">UCS</option>
+        <option value="greedy">Greedy</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Speed</label>
+      <input id="speed" type="range" min="1" max="20" value="10" />
+    </div>
+    <div class="row btns">
+      <button id="newCity">New Hazards</button>
+      <button id="run" class="primary">Run Rescue</button>
+      <button id="stop">Stop</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="showPath" checked /> show paths</label>
+  </div>
+  <div class="card stats">
+    <div><b id="stRescued">0</b><span>rescued</span></div>
+    <div><b id="stSteps">0</b><span>steps</span></div>
+    <div><b id="stCost">0</b><span>cost</span></div>
+    <div><b id="stVictims">0</b><span>left</span></div>
+  </div>
+  <div class="card">
+    <h3>AI feed</h3>
+    <div id="log"></div>
+  </div>
+  <div class="card small">
+    Base map © OpenStreetMap contributors, Esri, HERE, Garmin.
+    <a href="index.html">3D view</a> ·
+    <a href="https://github.com/yadavayush834/swarm_city" target="_blank">swarm_city repo</a>
+  </div>
+</aside>
+<div class="legend floating-bottom">
+  <span><i class="dot fire"></i>fire</span>
+  <span><i class="dot vic"></i>victim</span>
+  <span><i class="dot shel"></i>shelter</span>
+  <span><i class="dot bot"></i>drone</span>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>if(typeof L==='undefined'){document.getElementById('loader').innerHTML='<p style="padding:20px;text-align:center">Could not load Leaflet (CDN blocked).<br><a href="index.html">3D view</a> · <a href="2d.html">2D view</a></p>';}</script>
+<script src="realmap.js"></script>
+</body>
+</html>
