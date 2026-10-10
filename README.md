@@ -1,4 +1,4 @@
-# OMNIMIND Rescue Swarm (CPU-lite, i5 + 15GB RAM safe)
+# OMNIMIND Rescue Swarm
 
 Simulated disaster city where a drone/ground swarm rescues victims.
 Uses EVERY major AI family in one runnable repo, stdlib-only so it runs on your laptop with no GPU.
