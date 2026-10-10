@@ -64,7 +64,7 @@ function search(start, goal, algo){
 function assign(){
   const algo=$('algo').value;
   for(const r of robots){
-    if(r.path.length||r.carry) continue;
+    if(r.path.length||r.carry!==null) continue;
     let bv=null,bd=1e9,bp=[];
     for(const v of victims){
       if(v.saved||robots.some(o=>o!==r&&o.target===v.id)) continue;

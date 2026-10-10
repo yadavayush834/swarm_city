@@ -8,13 +8,16 @@ Uses EVERY major AI family in one runnable repo, stdlib-only so it runs on your 
 python3 main.py
 ```
 
-## Run frontend (real animated city)
+## Run frontend (3D night city, default)
 ```
 cd frontend && python3 -m http.server 8000
 # open http://localhost:8000
 ```
-- 20x20 roads/buildings/parks, fires flicker, victims pulse, 3 robots rescue live
+- Three.js 3D dusk city: lit buildings, flickering fires + smoke, tents + beacon shelters, quadcopter drones with spinning rotors
+- Drag to orbit, scroll to zoom, Orbit/Top view buttons, shadows toggle
 - Switch BFS/A*/UCS/Greedy, speed slider, path overlay, AI feed
+- `2d.html` keeps the lightweight canvas version
+- `?run=1` autostarts, `?fast=1` disables shadows (weak GPUs)
 - `python3 tools/export_city.py` dumps backend map to `frontend/city.json`
 
 ## Where each algorithm lives
