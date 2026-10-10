@@ -1,0 +1,4 @@
+# CPU-lite: no hard deps. Optional for scaling up:
+# numpy
+# scikit-learn
+# torch --index-url https://download.pytorch.org/whl/cpu
