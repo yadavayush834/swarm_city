@@ -18,7 +18,16 @@ cd frontend && python3 -m http.server 8000
 - Switch BFS/A*/UCS/Greedy, speed slider, path overlay, AI feed
 - Weather: rain toggle (local drones fly 15% slower), day/night cycle, tactical minimap
 - `2d.html` keeps the lightweight canvas version
-- `?run=1` autostarts, `?fast=1` disables shadows (weak GPUs), `?dn=0.5` sets time of day, `?rain=1` starts raining
+- No autostart anywhere: every map loads idle, you press Run Rescue
+- `?fast=1` disables shadows (weak GPUs), `?dn=0.5` sets time of day, `?rain=1` starts raining
+
+## Real map view (Google-Maps-style, actual Delhi streets)
+```
+# open http://localhost:8000/realmap.html
+```
+- Real street tiles (Esri/OSM) with live drone/victim/fire/shelter overlay + A* path polylines
+- Map switcher (Old Delhi / Connaught Place), New Hazards, algorithm + speed, stats, AI feed
+- Map loads idle — press Run Rescue when ready
 
 ## Live AI bridge (real Python ai/* driving the 3D view)
 ```
