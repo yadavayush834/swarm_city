@@ -768,6 +768,15 @@ $('showPath').onchange=drawPaths;
 $('shadowTgl').onchange=e=>{ renderer.shadowMap.enabled=e.target.checked; moon.castShadow=e.target.checked; };
 $('viewOrbit').onclick=()=>{ camera.position.set(27,25,27); controls.target.set(0,0,0); controls.autoRotate=true; };
 $('viewTop').onclick=()=>{ camera.position.set(0,52,0.01); controls.target.set(0,0,0); controls.autoRotate=false; };
+// accent theme switcher (persisted)
+(function(){
+  const dots=[...document.querySelectorAll('.tdot')];
+  const apply=t=>{ document.body.dataset.theme=t; try{localStorage.setItem('swarm-theme',t);}catch(e){}
+    dots.forEach(x=>x.classList.toggle('active',x.dataset.t===t)); };
+  dots.forEach(b=>b.onclick=()=>apply(b.dataset.t));
+  let saved='midnight'; try{ saved=localStorage.getItem('swarm-theme')||'midnight'; }catch(e){}
+  apply(saved);
+})();
 addEventListener('resize',()=>{
   camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight);
