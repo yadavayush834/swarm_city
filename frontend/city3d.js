@@ -10,11 +10,23 @@ let seed = 7;
 function rnd(){ seed = (seed*1664525 + 1013904223) >>> 0; return seed/4294967296; }
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-// ---------- city model (same rules as 2D sim) ----------
-const N = 20, CELL = 2, HALF = N*CELL/2;
+// ---------- city model (same legend as sim/city.py + maps) ----------
+// 0 road, 1 building, 2 rubble, 3 fire, 4 victim, 5 shelter, 6 park
+let N = 20, CELL = 2, HALF = N*CELL/2;
+function setWorldSize(n){ N=n; CELL=40/n; HALF=N*CELL/2; }
 const ROAD=0, BLD=1, RUB=2, FIRE=3, VIC=4, SHEL=5, PARK=6;
 let grid=[], robots=[], victims=[], shelters=[], fires=[];
 let running=false, steps=0, cost=0, rescued=0;
+// live backend link (?live=1 -> ws://host:8130, falls back to local sim)
+const live={active:false,ws:null,seq:0,badge:$('liveBadge')};
+function setLive(on){
+  live.active=on;
+  live.badge.textContent=on?'LIVE • BACKEND':'LOCAL SIM';
+  live.badge.classList.toggle('live',on);
+}
+// weather + time of day
+const rain={on:false,pts:null,vel:null,n:900};
+const dn={t:0.78,auto:true,period:240};
 
 function genModel(){
   seed = (Math.random()*1e9)|0;
@@ -27,9 +39,57 @@ function genModel(){
   shelters=[]; victims=[]; fires=[];
   [[1,1],[N-2,N-2],[1,N-2]].forEach(([x,y])=>{ grid[x][y]=SHEL; shelters.push({x,y}); });
   for(let k=0;k<14;k++){ const [x,y]=free(); if(grid[x][y]!==SHEL) grid[x][y]=RUB; }
-  for(let k=0;k<10;k++){ const [x,y]=free(); if(grid[x][y]!==SHEL){ grid[x][y]=FIRE; fires.push({x,y}); } }
+  for(let k=0;k<10;k++){ const [x,y]=free(); if(grid[x][y]!==SHEL){ grid[x][y]=FIRE; fires.push([x,y]); } }
   for(let k=0;k<8;k++){ const [x,y]=free(); grid[x][y]=VIC; victims.push({x,y,id:k,carried:false,saved:false}); }
   steps=0; cost=0; rescued=0;
+}
+// scatter hazards onto free cells (roadsOnly keeps real-map streets intact)
+function scatter(kind,count,roadsOnly=false){
+  let placed=0,guard=0;
+  while(placed<count&&guard<N*N*30){
+    guard++;
+    const x=1+((rnd()*(N-2))|0), y=1+((rnd()*(N-2))|0);
+    const ok=roadsOnly?grid[x][y]===ROAD:(grid[x][y]===BLD||grid[x][y]===ROAD);
+    if(ok){ grid[x][y]=kind; placed++; }
+  }
+}
+function ensureShelters(){
+  let n=grid.flat().filter(v=>v===SHEL).length;
+  for(const [x,y] of [[1,1],[N-2,N-2],[1,N-2]]){
+    if(n>=3) break;
+    if(grid[x][y]!==SHEL){ grid[x][y]=SHEL; n++; }
+  }
+}
+function indexModel(){
+  shelters=[];
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++) if(grid[i][j]===SHEL) shelters.push({x:i,y:j});
+  victims=[];
+  let k=0;
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++)
+    if(grid[i][j]===VIC) victims.push({x:i,y:j,id:k++,carried:false,saved:false});
+  fires=[];
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++) if(grid[i][j]===FIRE) fires.push([i,j]);
+  steps=0; cost=0; rescued=0;
+}
+// load a real-map / exported grid (?map=maps/cp.json), then top up hazards
+async function loadMap(url){
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('http '+r.status);
+  const m=await r.json();
+  const n=m.n||Math.round(Math.sqrt(m.grid.length));
+  if(!m.grid||m.grid.length!==n||m.grid[0].length!==n) throw new Error('bad grid');
+  seed=(Math.random()*1e9)|0;
+  setWorldSize(n);
+  grid=m.grid.map(row=>row.slice());
+  ensureShelters();
+  const have=k=>grid.flat().filter(v=>v===k).length;
+  scatter(VIC,Math.max(0,Math.round(N*N/50)-have(VIC)),true);
+  scatter(FIRE,Math.max(0,Math.round(N*N/40)-have(FIRE)),true);
+  scatter(RUB,Math.max(0,Math.round(N*N/28)-have(RUB)),true);
+  indexModel();
+  buildWorld();
+  const place=(m.meta&&m.meta.place)||url;
+  log(`loaded map ${place}: ${victims.length} victims, ${shelters.length} shelters`);
 }
 const cellXZ=(x,y)=>[ (y+0.5)*CELL-HALF, (x+0.5)*CELL-HALF ]; // col->x, row->z
 function passable(x,y){ return x>=0&&y>=0&&x<N&&y<N&&grid[x][y]!==BLD&&grid[x][y]!==RUB; }
@@ -85,7 +145,8 @@ controls.maxPolarAngle = Math.PI*0.495;
 controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
 controls.addEventListener('start', ()=>{ controls.autoRotate = false; });
 
-scene.add(new THREE.HemisphereLight(0x8fb4ff, 0x1a1430, 0.55));
+const hemi=new THREE.HemisphereLight(0x8fb4ff, 0x1a1430, 0.55);
+scene.add(hemi);
 const moon = new THREE.DirectionalLight(0xffd9a0, 1.15);
 moon.position.set(-30,42,18);
 moon.castShadow = true;
@@ -96,12 +157,14 @@ scene.add(moon);
 scene.add(new THREE.AmbientLight(0x334, 0.4));
 
 // stars
+let starsMat=null;
 {
   const g=new THREE.BufferGeometry(), pts=[];
   for(let i=0;i<400;i++){ const t=rnd()*Math.PI*2, p=rnd()*Math.PI*0.45, r=220;
     pts.push(r*Math.cos(t)*Math.cos(p), r*Math.sin(p)+10, r*Math.sin(t)*Math.cos(p)); }
   g.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({color:0xaFC4ff,size:0.7,fog:false,transparent:true,opacity:0.8})));
+  starsMat=new THREE.PointsMaterial({color:0xaFC4ff,size:0.7,fog:false,transparent:true,opacity:0.8});
+  scene.add(new THREE.Points(g, starsMat));
 }
 
 // ---------- canvas textures ----------
@@ -227,7 +290,7 @@ function buildWorld(){
   // fire point lights (pool of 4, reassigned to first fires)
   for(let k=0;k<Math.min(4,fires.length);k++){
     const L=new THREE.PointLight(0xff7a1a,30,14,1.8);
-    const f=fires[k]; const [x,z]=cellXZ(f.x,f.y); L.position.set(x,1.6,z);
+    const f=fires[k]; const [x,z]=cellXZ(f[0],f[1]); L.position.set(x,1.6,z);
     world.add(L); fireLights.push(L);
   }
   buildDrones();
@@ -390,7 +453,7 @@ function update(dt){
     if(r.wait<=0&&!r.path.length) handleArrival(r);
   }
   assign();
-  const spd=2+($('speed').valueAsNumber||10)*0.9;
+  const spd=(2+($('speed').valueAsNumber||10)*0.9)*(rain.on?0.85:1);
   for(const r of robots){
     // spin rotors always
     for(const rot of r.mesh.rotors) rot.rotation.y+=dt*30;
@@ -444,6 +507,167 @@ function updateStats(){
   $('stVictims').textContent=victims.filter(v=>!v.saved&&!v.carried).length;
 }
 
+// ---------- live backend link (?live=1 -> ws://host:8130) ----------
+function liveSend(o){ if(live.ws&&live.ws.readyState===1) live.ws.send(JSON.stringify(o)); }
+function liveConnect(){
+  const url='ws://'+location.hostname+':8130';
+  log('connecting to live backend '+url+' … (start it: python3 bridge/server.py)');
+  let opened=false;
+  const ws=new WebSocket(url);
+  live.ws=ws;
+  const giveUp=setTimeout(()=>{ if(!opened){ try{ws.close();}catch(e){} log('bridge unreachable — local sim'); } },3000);
+  ws.onopen=()=>{
+    opened=true; clearTimeout(giveUp); setLive(true);
+    log('LIVE: streaming the real Python ai/* sim (A*, CSP, Kalman, fuzzy)');
+    if(new URLSearchParams(location.search).get('run')==='1') liveSend({cmd:'run'});
+  };
+  ws.onmessage=ev=>{
+    let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+    if(m.type==='map') liveApplyMap(m);
+    else if(m.type==='state') liveApplyState(m);
+  };
+  ws.onclose=()=>{
+    clearTimeout(giveUp);
+    if(live.active){ setLive(false); log('bridge lost — back to local sim'); genModel(); buildWorld(); }
+  };
+  ws.onerror=()=>{ /* onclose handles fallback */ };
+}
+function liveApplyMap(m){
+  if(m.n!==N) setWorldSize(m.n);
+  grid=m.grid.map(r=>r.slice());
+  indexModel();
+  buildWorld();
+  live.seq=0;
+  log(`live map: ${victims.length} victims, ${shelters.length} shelters`);
+}
+function liveApplyState(m){
+  // globals feed minimap + visuals uniformly in both modes
+  victims=m.victims.map(v=>({x:v.x,y:v.y,id:v.id,carried:v.st==='carried',saved:false}));
+  fires=m.fires.map(f=>[f[0],f[1]]);
+  // fire visuals reconcile
+  const keep=new Set(fires.map(f=>f[0]*1000+f[1]));
+  for(let k=flameGroups.length-1;k>=0;k--){
+    const f=flameGroups[k];
+    if(!keep.has(f.cell[0]*1000+f.cell[1])){
+      world.remove(f.grp);
+      flameGroups.splice(k,1);
+      const si=smokeSys.findIndex(s=>s.cell[0]===f.cell[0]&&s.cell[1]===f.cell[1]);
+      if(si>=0) smokeSys.splice(si,1);
+      grid[f.cell[0]][f.cell[1]]=ROAD;
+    }
+  }
+  // victim visuals reconcile
+  const ids=new Set(victims.map(v=>v.id));
+  for(const [id,rec] of [...victimMeshes]){
+    const v=victims.find(v=>v.id===id);
+    if(!v){ world.remove(rec.grp); victimMeshes.delete(id); }
+    else if(v.carried&&!rec.cargo){ rec.cargo=true; rec.grp.scale.setScalar(0.8); }
+  }
+  // drones (server ids match row-major shelter order, same as indexModel)
+  for(const sd of m.drones){
+    const r=robots[sd.id];
+    if(!r) continue;
+    const [tx,tz]=cellXZ(sd.fx,sd.fy);
+    r.sv={x:tx,z:tz};
+    r.path=(sd.path||[]).map(p=>[p[0],p[1]]);
+    r.carry=sd.carry; r.target=sd.target;
+    r.x=sd.gx; r.y=sd.gy;
+  }
+  drawPaths();
+  rescued=m.stats.rescued; steps=m.stats.steps; cost=m.stats.cost;
+  updateStats();
+  $('stVictims').textContent=m.stats.left;
+  if(typeof m.running==='boolean'&&m.running!==running){
+    running=m.running; $('run').textContent=running?'Pause':'Run Rescue';
+  }
+  for(const [seq,msg] of (m.events||[])){
+    if(seq>live.seq){ live.seq=seq; log(msg); }
+  }
+}
+// smooth-follow server drone positions (Kalman-filtered on the backend)
+function liveInterpolate(dt){
+  for(const r of robots){
+    for(const rot of r.mesh.rotors) rot.rotation.y+=dt*30;
+    if(!r.sv) continue;
+    const dx=r.sv.x-r.fx, dz=r.sv.z-r.fz, d=Math.hypot(dx,dz);
+    if(d>1e-4){
+      r.mesh.grp.rotation.y=Math.atan2(dx,dz);
+      const s=Math.min(d,14*dt);
+      r.fx+=dx/d*s; r.fz+=dz/d*s;
+    }
+    const ty=5.2+Math.sin(performance.now()/600+r.x)*0.15;
+    r.fy+=(ty-r.fy)*Math.min(1,dt*3);
+    r.mesh.grp.position.set(r.fx,r.fy,r.fz);
+    if(r.carry!==null){
+      const rec=victimMeshes.get(r.carry);
+      if(rec) rec.grp.position.set(r.fx,r.fy-0.75,r.fz);
+    }
+  }
+}
+
+// ---------- weather: rain + day/night cycle ----------
+function buildRain(){
+  const pos=new Float32Array(rain.n*3); rain.vel=new Float32Array(rain.n);
+  for(let k=0;k<rain.n;k++){
+    pos[k*3]=(rnd()-0.5)*70; pos[k*3+1]=rnd()*26; pos[k*3+2]=(rnd()-0.5)*70;
+    rain.vel[k]=22+rnd()*10;
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  rain.pts=new THREE.Points(g,new THREE.PointsMaterial({color:0x9db8dd,size:0.16,transparent:true,opacity:0.55,depthWrite:false}));
+  rain.pts.visible=false; rain.pts.frustumCulled=false;
+  scene.add(rain.pts);
+}
+function tickRain(dt){
+  if(!rain.on||!rain.pts) return;
+  const p=rain.pts.geometry.attributes.position;
+  for(let k=0;k<rain.n;k++){
+    let y=p.getY(k)-rain.vel[k]*dt;
+    if(y<0){ y=26; p.setX(k,(rnd()-0.5)*70); p.setZ(k,(rnd()-0.5)*70); }
+    p.setY(k,y);
+  }
+  p.needsUpdate=true;
+}
+const SKY_NIGHT=new THREE.Color(0x0b1020), SKY_DAY=new THREE.Color(0x8fc3e8);
+const _sky=new THREE.Color();
+function applyDayNight(dt){
+  if(dn.auto) dn.t=(dn.t+dt/dn.period)%1;
+  const dl=clamp(Math.sin(dn.t*Math.PI*2-Math.PI/2)*0.5+0.5,0,1); // 0 night .. 1 noon
+  _sky.lerpColors(SKY_NIGHT,SKY_DAY,dl);
+  scene.background.copy(_sky); scene.fog.color.copy(_sky);
+  hemi.intensity=0.35+0.65*dl;
+  moon.intensity=0.25+1.1*Math.max(dl,0.18);
+  moon.color.setHex(dl>0.5?0xfff4e0:0xffd9a0);
+  const a=dn.t*Math.PI*2;
+  moon.position.set(Math.cos(a)*35,Math.sin(a)*40+8,18);
+  starsMat.opacity=0.85*(1-dl);
+}
+
+// ---------- tactical minimap ----------
+const mm=$('minimap'), mmc=mm.getContext('2d');
+let mmAcc=1;
+function drawMinimap(){
+  const S=mm.width, c=S/N;
+  mmc.fillStyle='#070c22'; mmc.fillRect(0,0,S,S);
+  for(let i=0;i<N;i++) for(let j=0;j<N;j++){
+    const v=grid[i]&&grid[i][j];
+    mmc.fillStyle=v===ROAD?'#1a2340':v===BLD?'#3b4a74':v===RUB?'#52525b':v===PARK?'#14532d':v===SHEL?'#14532d':'#1a2340';
+    mmc.fillRect(j*c,i*c,Math.ceil(c),Math.ceil(c));
+  }
+  for(const [x,y] of fires){ mmc.fillStyle='#f97316'; mmc.fillRect(y*c,x*c,Math.ceil(c),Math.ceil(c)); }
+  for(const v of victims){
+    if(v.carried||v.saved) continue;
+    mmc.fillStyle='#ef4444'; mmc.beginPath();
+    mmc.arc((v.y+0.5)*c,(v.x+0.5)*c,Math.max(1.5,c*0.4),0,7); mmc.fill();
+  }
+  for(const s of shelters){ mmc.strokeStyle='#22c55e'; mmc.strokeRect(s.y*c+0.5,s.x*c+0.5,c-1,c-1); }
+  // drones use grid coords (r.x/r.y) in both local and live modes
+  mmc.fillStyle='#22d3ee';
+  for(const r of robots){ mmc.beginPath(); mmc.arc((r.y+0.5)*c,(r.x+0.5)*c,Math.max(2,c*0.45),0,7); mmc.fill(); }
+  mmc.strokeStyle='#fff'; mmc.lineWidth=1;
+  for(const r of robots){ mmc.beginPath(); mmc.arc((r.y+0.5)*c,(r.x+0.5)*c,Math.max(3,c*0.6),0,7); mmc.stroke(); }
+}
+
 // ---------- per-frame visuals ----------
 function tickVisuals(dt,t){
   for(const f of flameGroups){
@@ -477,16 +701,42 @@ const clock=new THREE.Clock();
 function loop(){
   requestAnimationFrame(loop);
   const dt=Math.min(clock.getDelta(),0.05), t=performance.now();
-  if(running) update(dt);
+  if(live.active) liveInterpolate(dt);
+  else if(running) update(dt);
+  tickRain(dt);
+  applyDayNight(dt);
+  mmAcc+=dt; if(mmAcc>0.5){ mmAcc=0; drawMinimap(); }
   tickVisuals(dt,t);
   controls.update();
   renderer.render(scene,camera);
 }
 
 // ---------- UI ----------
-$('newCity').onclick=()=>{ genModel(); buildWorld(); log(`new city: ${victims.length} victims, ${shelters.length} shelters`); };
-$('run').onclick=()=>{ running=!running; $('run').textContent=running?'Pause':'Run Rescue'; log(running?'rescue started':'paused'); };
-$('stop').onclick=()=>{ running=false; $('run').textContent='Run Rescue'; genModel(); buildWorld(); };
+$('newCity').onclick=()=>{
+  if(live.active){ liveSend({cmd:'newcity'}); return; }
+  genModel(); buildWorld(); log(`new city: ${victims.length} victims, ${shelters.length} shelters`);
+};
+$('run').onclick=()=>{
+  if(live.active){ liveSend({cmd:running?'pause':'run'}); return; }
+  running=!running; $('run').textContent=running?'Pause':'Run Rescue'; log(running?'rescue started':'paused');
+};
+$('stop').onclick=()=>{
+  if(live.active){ liveSend({cmd:'pause'}); return; }
+  running=false; $('run').textContent='Run Rescue'; genModel(); buildWorld();
+};
+$('algo').onchange=e=>{ if(live.active) liveSend({cmd:'set-algo',algo:e.target.value}); };
+$('speed').onchange=e=>{ if(live.active) liveSend({cmd:'set-speed',speed:e.target.valueAsNumber}); };
+$('rainTgl').onclick=()=>{
+  rain.on=!rain.on; if(rain.pts) rain.pts.visible=rain.on;
+  $('rainTgl').textContent='Rain: '+(rain.on?'on':'off');
+  log(rain.on?'rain: local drones fly 15% slower':'rain stopped');
+};
+$('dnTgl').onclick=()=>{ dn.auto=!dn.auto; $('dnTgl').textContent='Day/night: '+(dn.auto?'on':'off'); };
+$('loadMapBtn').onclick=()=>{
+  if(live.active){ log('maps are local-mode: reload without ?live to use them'); return; }
+  const u=($('mapUrl').value||'').trim();
+  if(u) loadMap(u).catch(e=>log('map load failed: '+u));
+};
 $('showPath').onchange=drawPaths;
 $('shadowTgl').onchange=e=>{ renderer.shadowMap.enabled=e.target.checked; moon.castShadow=e.target.checked; };
 $('viewOrbit').onclick=()=>{ camera.position.set(27,25,27); controls.target.set(0,0,0); controls.autoRotate=true; };
@@ -497,10 +747,16 @@ addEventListener('resize',()=>{
 });
 
 // ---------- boot ----------
+buildRain();
 genModel();
 buildWorld();
 log(`new city: ${victims.length} victims, ${shelters.length} shelters`);
-if(new URLSearchParams(location.search).get('run')==='1'){
+const Q=new URLSearchParams(location.search);
+if(Q.get('dn')){ const p=parseFloat(Q.get('dn')); if(!isNaN(p)) dn.t=((p%1)+1)%1; }
+if(Q.get('rain')==='1'){ rain.on=true; if(rain.pts) rain.pts.visible=true; $('rainTgl').textContent='Rain: on'; }
+if(Q.get('map')&&!Q.has('live')) loadMap(Q.get('map')).catch(e=>log('map load failed, using generated city'));
+if(Q.has('live')) liveConnect();
+else if(Q.get('run')==='1'){
   for(let k=0;k<70;k++){ if(!victims.length) break; update(0.5); }
   running=true; $('run').textContent='Pause'; log('rescue started');
 }
