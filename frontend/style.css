@@ -21,3 +21,18 @@ button:hover{filter:brightness(1.2)}
 #log{height:180px;overflow:auto;font-family:monospace;font-size:12px;background:#070c22;border-radius:8px;padding:8px;border:1px solid #1c2a5c}
 #log div{margin:2px 0}.small{font-size:12px;opacity:.85}a{color:#5eead4}
 @media(max-width:900px){main{flex-direction:column}.panel{width:100%}}
+/* ---- 3D view ---- */
+body.view3d{overflow:hidden}
+body.view3d header{display:none}
+#scene-container{position:fixed;inset:0}
+#scene-container canvas{display:block}
+.overlay-title{position:fixed;top:14px;left:18px;z-index:5;pointer-events:none;text-shadow:0 2px 12px #000}
+.panel.floating{position:fixed;top:14px;right:14px;z-index:5;width:320px;max-height:calc(100vh - 28px);overflow:auto;background:rgba(10,15,35,.72);backdrop-filter:blur(10px);border-radius:16px;padding:12px}
+.panel.floating .card{background:rgba(17,26,58,.85)}
+.legend.floating-bottom{position:fixed;bottom:12px;left:18px;z-index:5;background:rgba(10,15,35,.7);padding:8px 12px;border-radius:10px;border:1px solid #223060}
+#loader{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;background:#0b1020}
+.spin{width:44px;height:44px;border-radius:50%;border:4px solid #223060;border-top-color:#5eead4;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#webgl-error{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b1020;text-align:center;padding:20px}
+#webgl-error[hidden]{display:none}
+@media(max-width:900px){.panel.floating{top:auto;bottom:54px;right:8px;left:8px;width:auto;max-height:44vh}}

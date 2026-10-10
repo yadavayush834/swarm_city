@@ -3,67 +3,85 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OMNIMIND — Swarm City Rescue</title>
+<title>OMNIMIND — Swarm City Rescue 3D</title>
 <link rel="stylesheet" href="style.css" />
+<script type="importmap">
+{"imports":{
+  "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
 </head>
-<body>
-<header>
-  <div class="logo">OMNIMIND <span>SWARM CITY</span></div>
-  <div class="sub">real-time disaster-response simulator · every AI family wired in</div>
+<body class="view3d">
+<div id="scene-container"></div>
+<div id="loader"><div class="spin"></div><p>building 3D city…</p></div>
+<div id="webgl-error" hidden>
+  <h2>Could not load 3D view</h2>
+  <p>Three.js CDN or WebGL is unavailable.</p>
+  <p><a href="2d.html">Open the 2D version instead</a></p>
+</div>
+<header class="overlay-title">
+  <div class="logo">OMNIMIND <span>SWARM CITY 3D</span></div>
+  <div class="sub">drag to orbit · scroll to zoom · right-drag to pan</div>
 </header>
-<main>
-  <section class="map-wrap">
-    <canvas id="city" width="640" height="640"></canvas>
-    <div class="legend">
-      <span><i class="dot road"></i>road</span>
-      <span><i class="dot bld"></i>building</span>
-      <span><i class="dot fire"></i>fire</span>
-      <span><i class="dot rub"></i>rubble</span>
-      <span><i class="dot vic"></i>victim</span>
-      <span><i class="dot shel"></i>shelter</span>
-      <span><i class="dot bot"></i>robot</span>
+<aside class="panel floating">
+  <div class="card">
+    <h3>Controls</h3>
+    <div class="row">
+      <label>Algorithm</label>
+      <select id="algo">
+        <option value="astar">A*</option>
+        <option value="bfs">BFS</option>
+        <option value="ucs">UCS</option>
+        <option value="greedy">Greedy</option>
+      </select>
     </div>
-  </section>
-  <aside class="panel">
-    <div class="card">
-      <h3>Controls</h3>
-      <div class="row">
-        <label>Algorithm</label>
-        <select id="algo">
-          <option value="astar">A*</option>
-          <option value="bfs">BFS</option>
-          <option value="ucs">UCS</option>
-          <option value="greedy">Greedy</option>
-        </select>
-      </div>
-      <div class="row">
-        <label>Speed</label>
-        <input id="speed" type="range" min="1" max="20" value="8" />
-      </div>
-      <div class="row btns">
-        <button id="newCity">New City</button>
-        <button id="run" class="primary">Run Rescue</button>
-        <button id="stop">Stop</button>
-      </div>
-      <label class="chk"><input type="checkbox" id="showPath" checked /> show paths</label>
+    <div class="row">
+      <label>Speed</label>
+      <input id="speed" type="range" min="1" max="20" value="10" />
     </div>
-    <div class="card stats">
-      <div><b id="stRescued">0</b><span>rescued</span></div>
-      <div><b id="stSteps">0</b><span>steps</span></div>
-      <div><b id="stCost">0</b><span>cost</span></div>
-      <div><b id="stVictims">0</b><span>left</span></div>
+    <div class="row btns">
+      <button id="newCity">New City</button>
+      <button id="run" class="primary">Run Rescue</button>
+      <button id="stop">Stop</button>
     </div>
-    <div class="card">
-      <h3>AI feed</h3>
-      <div id="log"></div>
+    <div class="row btns">
+      <button id="viewOrbit">Orbit view</button>
+      <button id="viewTop">Top view</button>
     </div>
-    <div class="card small">
-      Backend: <code>python3 main.py</code> runs all 40+ algorithms.
-      This UI runs Search + CSP assignment + Fuzzy speed live in JS.
-      <a href="https://github.com/yadavayush834/swarm_city" target="_blank">swarm_city repo</a>
-    </div>
-  </aside>
-</main>
-<script src="app.js"></script>
+    <label class="chk"><input type="checkbox" id="showPath" checked /> show paths</label>
+    <label class="chk"><input type="checkbox" id="shadowTgl" checked /> shadows</label>
+  </div>
+  <div class="card stats">
+    <div><b id="stRescued">0</b><span>rescued</span></div>
+    <div><b id="stSteps">0</b><span>steps</span></div>
+    <div><b id="stCost">0</b><span>cost</span></div>
+    <div><b id="stVictims">0</b><span>left</span></div>
+  </div>
+  <div class="card">
+    <h3>AI feed</h3>
+    <div id="log"></div>
+  </div>
+  <div class="card small">
+    <a href="2d.html">2D version</a> ·
+    Backend: <code>python3 main.py</code> ·
+    <a href="https://github.com/yadavayush834/swarm_city" target="_blank">swarm_city repo</a>
+  </div>
+</aside>
+<div class="legend floating-bottom">
+  <span><i class="dot bld"></i>building</span>
+  <span><i class="dot fire"></i>fire</span>
+  <span><i class="dot rub"></i>rubble</span>
+  <span><i class="dot vic"></i>victim</span>
+  <span><i class="dot shel"></i>shelter</span>
+  <span><i class="dot bot"></i>drone</span>
+</div>
+<script>
+  window.__bootTimer = setTimeout(function(){
+    if(!window.__city3d_booted) document.getElementById('webgl-error').hidden = false;
+    document.getElementById('loader').style.display = 'none';
+  }, 15000);
+</script>
+<script type="module" src="city3d.js"></script>
 </body>
 </html>
