@@ -1,64 +1,47 @@
-# OMNIMIND Rescue Swarm
+# Swarm City
 
-Simulated disaster city where a drone/ground swarm rescues victims.
-Uses EVERY major AI family in one runnable repo, stdlib-only so it runs on your laptop with no GPU.
+An interactive drone rescue simulator with a self-contained 3D city and a redesigned operations workspace. The interface, city renderer and mission engine were rebuilt around daytime architectural models, readable telemetry and working controls.
 
-## Run backend (all 40+ algorithms)
-```
-python3 main.py
+## Run locally
+
+Python 3 and a modern browser with WebGL are all you need. No package install, CDN, API keys or separate backend process is required.
+
+```sh
+python run.py
 ```
 
-## Run frontend (3D night city, default)
-```
-cd frontend && python3 -m http.server 8000
-# open http://localhost:8000
-```
-- Three.js 3D dusk city: lit buildings, flickering fires + smoke, tents + beacon shelters, quadcopter drones with spinning rotors
-- Drag to orbit, scroll to zoom, Orbit/Top view buttons, shadows toggle
-- Switch BFS/A*/UCS/Greedy, speed slider, path overlay, AI feed
-- Weather: rain toggle (local drones fly 15% slower), day/night cycle, tactical minimap
-- `2d.html` keeps the lightweight canvas version
-- No autostart anywhere: every map loads idle, you press Run Rescue
-- `?fast=1` disables shadows (weak GPUs), `?dn=0.5` sets time of day, `?rain=1` starts raining
+Open **http://127.0.0.1:8087**. Use `python run.py --port 9000` for a different port. The server binds only to localhost.
 
-## Real map view (Google-Maps-style, actual Delhi streets)
-```
-# open http://localhost:8000/realmap.html
-```
-- Real street tiles (Esri/OSM) with live drone/victim/fire/shelter overlay + A* path polylines
-- Map switcher (Old Delhi / Connaught Place), New Hazards, algorithm + speed, stats, AI feed
-- Map loads idle — press Run Rescue when ready
+## The workspace
 
-## Live AI bridge (real Python ai/* driving the 3D view)
-```
-python3 bridge/server.py --port 8130 --seed 7
-# open http://localhost:8000/?live=1&run=1
-```
-- Stdlib-only WebSocket server: A* routing, CSP tasking, Kalman-filtered GPS, fuzzy-logic speeds stream at 10 Hz
-- Badge flips LOCAL SIM -> LIVE • BACKEND; falls back to local sim if the bridge is down
+- A detailed orthographic city with modeled buildings, rooftop equipment, parks, street trees, road markings, a river and bridges.
+- Four identifiable quadcopters, survivor markers, hazards and four rescue stations.
+- Three reproducible scenarios: Riverside, Downtown and Parkland. Reset keeps the seed; the seed button generates another city.
+- Start, pause and resume a mission; adjust simulation speed from 1× to 8×.
+- Choose A*, breadth-first, uniform-cost or greedy routing. Routes use a connected street graph with additional costs near hazards.
+- Select drones in the scene or fleet list to inspect assignments, battery, distance and rescues.
+- Switch between orbit and tactical cameras; zoom, fit the city, and toggle buildings or flight paths.
+- Rain reduces flight speed and adds a visual weather effect.
+- Live rescue progress, fleet states and timestamped mission activity.
+- Compare the four algorithms on the same start/destination pair, and export the current mission as JSON.
+- Responsive layouts and keyboard shortcuts: Space to start/pause, R to reset, F to fit, T for tactical view, ? for help.
 
-## Real maps (OpenStreetMap)
-```
-python3 tools/osm_import.py --place "Connaught Place, New Delhi" --n 40 --out frontend/maps/cp.json
-# open http://localhost:8000/?map=maps/cp.json&run=1
-```
-- `frontend/maps/cp.json` (Connaught Place) and `frontend/maps/olddelhi.json` (dense Old Delhi, N=64) are included
-- Open_dense map directly: `http://localhost:8000/?map=maps/olddelhi.json&run=1`
-- `python3 tools/export_city.py` dumps backend map to `frontend/city.json`
+The mission runs in the browser and pauses simulation time when its tab is hidden. All counters come from that local mission. This is a synthetic teaching simulation, not operational emergency-response software. Drones follow modeled streets for routing comparison; the rendered flight height is illustrative. Battery discharge and station charging are simplified. Hazards remain fixed for a mission.
 
-## Where each algorithm lives
-- `sim/city.py` — grid world, rendering
-- `ai/search.py` — BFS, DFS, UCS, Greedy, A*, IDA*
-- `ai/adversarial.py` — Minimax, Alpha-Beta, Expectimax, MCTS
-- `ai/csp_logic.py` — Backtracking, AC-3, Min-Conflicts, Forward-chaining expert system, Fuzzy logic
-- `ai/probabilistic.py` — Naive Bayes, Bayes Net, HMM, Kalman, Particle Filter, MCMC
-- `ai/classical_ml.py` — LinReg, LogReg, kNN, Decision Tree, Random Forest, Perceptron/SVM, k-Means, DBSCAN, Hierarchical, PCA, GMM/EM
-- `ai/neural.py` — MLP, CNN, RNN, LSTM, Self-Attention/Transformer, Autoencoder, GAN, Diffusion
-- `ai/rl.py` — Value Iteration, Monte Carlo, SARSA, Q-Learning, DQN-toy, REINFORCE, Actor-Critic, PPO-clip
-- `ai/evolutionary.py` — Genetic Algorithm, PSO, Ant Colony, Simulated Annealing
-- `ai/nlp.py` — TF-IDF, Word2Vec, Sentiment, Attention
-- `main.py` — one rescue episode calling all of the above
+## Verification
 
-## Notes for your laptop
-- No numpy/torch required. All from scratch, <2s runtime.
-- To scale: install `requirements.txt` extras and swap toy nets for sklearn/torch on Colab.
+```sh
+node --test tests/engine.test.mjs
+```
+
+The tests check deterministic generation, survivor reachability, full completion with every routing algorithm, pause/reset behavior, weather speed, and optimal weighted route costs. Node is needed only for these tests.
+
+## Files
+
+- `frontend/index.html`, `workspace.css`, `workspace.js`: operations interface.
+- `frontend/city-view.js`: Three.js city, camera controls and picking.
+- `frontend/engine.mjs`: deterministic maps, search algorithms and mission state.
+- `frontend/vendor/`: locally vendored Three.js 0.160.0 and OrbitControls, with the upstream MIT license.
+- `run.py`: local static server.
+- `ai/`, `sim/`, `main.py`: the original Python AI examples, retained for study. Run `python main.py` to execute them.
+- `bridge/`, `frontend/2d.html`, `frontend/realmap.html`: original demonstrations. Their setup is in [LEGACY.md](LEGACY.md); they are separate from the rebuilt workspace.

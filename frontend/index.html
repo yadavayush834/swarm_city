@@ -1,111 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-type="software">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>OMNIMIND — Swarm City Rescue 3D</title>
-<link rel="stylesheet" href="style.css" />
-<script type="importmap">
-{"imports":{
-  "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
-  "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
-}}
-</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="page-type" content="software"><meta name="site-kind" content="software">
+<meta name="description" content="Plan and run a drone rescue mission in an interactive 3D city."><meta name="theme-color" content="#f5f5f2">
+<title>Swarm City — Rescue operations</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="workspace.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/controls/OrbitControls.js":"./vendor/OrbitControls.js"}}</script>
 </head>
-<body class="view3d">
-<div id="scene-container"></div>
-<div id="loader"><div class="spin"></div><p>building 3D city…</p></div>
-<div id="webgl-error" hidden>
-  <h2>Could not load 3D view</h2>
-  <p>Three.js CDN or WebGL is unavailable.</p>
-  <p><a href="2d.html">Open the 2D version instead</a></p>
-</div>
-<header class="overlay-title">
-  <div class="logo">OMNIMIND <span>SWARM CITY 3D</span> <b id="liveBadge">LOCAL SIM</b></div>
-  <div class="sub">drag to orbit · scroll to zoom · right-drag to pan</div>
+<body>
+<a class="skip" href="#city">Skip to simulation</a>
+<header class="app-header">
+<a class="brand" href="./" aria-label="Swarm City home"><span class="brand-mark">✳</span><span>swarm<span class="brand-light">city</span><sup>LAB</sup></span></a>
+<div class="breadcrumb">Workspace <span>/</span> <strong>Rescue operations</strong></div>
+<div class="header-end"><span class="local-badge"><i></i> Local simulation</span><button class="icon-btn" id="helpBtn" aria-label="Open keyboard shortcuts">?</button><span class="avatar" title="Local operator">OP</span></div>
 </header>
-<aside class="panel floating">
-  <div class="card">
-    <h3>Controls</h3>
-    <div class="row">
-      <label>Algorithm</label>
-      <select id="algo">
-        <option value="astar">A*</option>
-        <option value="bfs">BFS</option>
-        <option value="ucs">UCS</option>
-        <option value="greedy">Greedy</option>
-      </select>
-    </div>
-    <div class="row">
-      <label>Speed</label>
-      <input id="speed" type="range" min="1" max="20" value="10" />
-    </div>
-    <div class="row btns">
-      <button id="newCity">New City</button>
-      <button id="run" class="primary">Run Rescue</button>
-      <button id="stop">Stop</button>
-    </div>
-    <div class="row">
-      <label>Theme</label>
-      <div class="tdots">
-        <button class="tdot" data-t="midnight" title="Midnight teal" aria-label="Midnight teal"></button>
-        <button class="tdot" data-t="amber" title="Ember amber" aria-label="Ember amber"></button>
-        <button class="tdot" data-t="violet" title="Nebula violet" aria-label="Nebula violet"></button>
-      </div>
-    </div>
-    <div class="row btns">
-      <button id="viewOrbit">Orbit view</button>
-      <button id="viewTop">Top view</button>
-    </div>
-    <div class="row btns">
-      <button id="rainTgl">Rain: off</button>
-      <button id="dnTgl">Day/night: on</button>
-    </div>
-    <div class="row">
-      <input id="mapUrl" placeholder="maps/olddelhi.json" />
-      <button id="loadMapBtn">Load map</button>
-    </div>
-    <label class="chk"><input type="checkbox" id="showPath" checked /> show paths</label>
-    <label class="chk"><input type="checkbox" id="shadowTgl" checked /> shadows</label>
-  </div>
-  <div class="card stats">
-    <div><b id="stRescued">0</b><span>rescued</span></div>
-    <div><b id="stSteps">0</b><span>steps</span></div>
-    <div><b id="stCost">0</b><span>cost</span></div>
-    <div><b id="stVictims">0</b><span>left</span></div>
-  </div>
-  <div class="card">
-    <h3>Tactical map</h3>
-    <canvas id="minimap" width="150" height="150"></canvas>
-  </div>
-  <div class="card">
-    <h3>AI feed</h3>
-    <div id="log"></div>
-  </div>
-  <div class="card small">
-    <a href="2d.html">2D version</a> ·
-    Backend: <code>python3 main.py</code> ·
-    <a href="https://github.com/yadavayush834/swarm_city" target="_blank">swarm_city repo</a>
-  </div>
+<div class="app-layout">
+<nav class="rail" aria-label="Workspace navigation">
+<button class="rail-item active" data-view="operations" title="Operations" aria-label="Operations" aria-pressed="true"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+<button class="rail-item" data-view="fleet" title="Fleet" aria-label="Fleet" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m7 7 10 10M7 17 17 7"/><circle cx="5" cy="5" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/></svg></button>
+<button class="rail-item" data-view="insights" title="Mission insights" aria-label="Mission insights" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 20h17M7 16V9m6 7V4m6 12v-5"/></svg></button>
+<div class="rail-spacer"></div><button class="rail-item" id="settingsBtn" title="Display settings" aria-label="Display settings"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="16" cy="17" r="3"/></svg></button>
+<span class="rail-version">V2</span>
+</nav>
+<main class="workspace">
+<div class="page-heading" data-enter><div><div class="eyebrow"><span class="orange-dot"></span> Autonomous response lab</div><h1>Rescue operations<span class="heading-dot">.</span></h1><p>One city. A coordinated response.</p></div><button id="exportBtn" class="button secondary"><svg viewBox="0 0 20 20"><path d="M10 2v10m-4-4 4 4 4-4M3 12v5h14v-5"/></svg>Export report</button></div>
+<section class="summary" aria-label="Mission statistics">
+<div class="metric"><div class="metric-label">People rescued <span class="metric-icon">↗</span></div><div class="metric-value"><span id="rescued">0</span><small>/ <span id="totalVictims">12</span></small></div><div class="metric-foot"><span class="green-dot"></span><span id="rescueNote">Awaiting deployment</span></div></div>
+<div class="metric"><div class="metric-label">Active drones <span class="metric-icon">⌘</span></div><div class="metric-value"><span id="activeDrones">4</span><small>units</small></div><div class="metric-foot">Autonomous rescue fleet</div></div>
+<div class="metric"><div class="metric-label">Mission time <span class="metric-icon">◷</span></div><div class="metric-value mono" id="missionTime">00:00</div><div class="metric-foot" id="timeNote">Simulation ready</div></div>
+<div class="metric"><div class="metric-label">Distance covered <span class="metric-icon">⌁</span></div><div class="metric-value"><span id="distance">0</span><small>m</small></div><div class="metric-foot" id="costNote">Across all flight paths</div></div>
+</section>
+<div class="operations-grid">
+<aside class="mission-panel panel" aria-label="Mission configuration">
+<div class="panel-heading"><h2>Mission setup</h2><span class="micro-tag">01</span></div>
+<div class="scenario-art" aria-hidden="true"><div class="art-grid"></div><span class="art-building b1"></span><span class="art-building b2"></span><span class="art-building b3"></span><span class="art-building b4"></span><span class="art-river"></span><span class="art-pin">+</span></div>
+<label class="field-label" for="scenario">Scenario</label><select id="scenario"><option value="riverside">Riverside district</option><option value="downtown">Downtown response</option><option value="parkland">Parkland evacuation</option></select>
+<p class="field-hint" id="scenarioHint">Mixed city blocks, river crossings and open parks.</p>
+<div class="divider"></div>
+<div class="section-label">Routing intelligence <span class="info" title="Changes apply to the next route planned">i</span></div>
+<label class="field-label" for="algorithm">Search algorithm</label><select id="algorithm"><option value="astar">A* search</option><option value="bfs">Breadth-first search</option><option value="ucs">Uniform-cost search</option><option value="greedy">Greedy best-first</option></select>
+<p class="algorithm-description" id="algorithmDescription">Balances route cost and distance to the destination.</p>
+<div class="range-label"><label for="speed">Simulation speed</label><output id="speedValue">1×</output></div><input id="speed" type="range" min="1" max="8" value="1" step="1"><div class="range-endpoints"><span>Real time</span><span>8× faster</span></div>
+<div class="divider"></div>
+<div class="section-label">Conditions <span class="weather-icon">☀</span></div>
+<div class="weather-options" role="group" aria-label="Weather"><button data-weather="clear" class="weather-option selected" aria-pressed="true">☀ <span>Clear</span></button><button data-weather="rain" class="weather-option" aria-pressed="false">☂ <span>Rain</span></button></div>
+<div class="condition-line"><span>Flight conditions</span><span id="flightCondition">Optimal</span></div>
+<div class="mission-actions"><button id="startBtn" class="button primary"><span id="playIcon">▶</span><span id="startLabel">Start mission</span><kbd>Space</kbd></button><button id="resetBtn" class="button reset"><span>↻</span> Reset mission</button></div>
+<div class="seed-row"><span>Scenario seed</span><button id="seedBtn" title="Generate another city">#<span id="seedValue">0042</span> <span>↻</span></button></div>
 </aside>
-<div class="legend floating-bottom">
-  <span><i class="dot bld"></i>building</span>
-  <span><i class="dot fire"></i>fire</span>
-  <span><i class="dot rub"></i>rubble</span>
-  <span><i class="dot vic"></i>victim</span>
-  <span><i class="dot shel"></i>shelter</span>
-  <span><i class="dot bot"></i>drone</span>
+<section class="city-panel panel" id="city" aria-label="Interactive 3D rescue city">
+<div class="city-toolbar"><div class="view-switch" role="group" aria-label="Camera view"><button class="selected" id="view3d" aria-pressed="true">◇ <span>3D view</span></button><button id="viewTop" aria-pressed="false">▦ <span>Tactical</span></button></div><span class="mission-status" id="missionStatus"><i></i> Standby</span></div>
+<div class="city-viewport" id="viewport"><canvas id="scene" aria-label="3D city. Drag to orbit, scroll to zoom, or select a drone." tabindex="0"></canvas><div id="sceneLoading" class="scene-loading"><span></span>Preparing your city</div>
+<div class="map-label"><span class="location-dot"></span><div><strong id="districtLabel">Riverside district</strong><small id="mapSubtitle">Sector 01 · 4 rescue stations</small></div></div>
+<div class="north-indicator"><span>N</span><svg viewBox="0 0 30 40"><path d="M15 3 25 31 15 26 5 31Z"/><path d="M15 3v23"/></svg></div>
+<div class="camera-controls"><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button><span></span><button id="fitView" aria-label="Fit city in view">⌖</button></div>
+<div class="map-instructions" id="mapInstructions"><span>⌘</span> Drag to orbit <i>·</i> Scroll to zoom</div>
+<div id="selectionCard" class="selection-card" hidden><div><span class="orange-dot"></span><strong id="selectionName">Drone 01</strong><button id="closeSelection" aria-label="Close drone details">×</button></div><p id="selectionStatus"></p><span id="selectionDetail"></span></div>
+<div class="layer-controls"><label><input id="showRoutes" type="checkbox" checked><span>Flight paths</span></label><label><input id="showBuildings" type="checkbox" checked><span>Buildings</span></label></div>
+<div id="completeBanner" class="complete-banner" hidden><span>✓</span><div><strong>All people brought to safety</strong><p id="completeSummary"></p></div><button id="newMissionBtn">New mission ↗</button></div>
 </div>
-<script>
-  window.__bootTimer = setTimeout(function(){
-    if(!window.__city3d_booted) document.getElementById('webgl-error').hidden = false;
-    document.getElementById('loader').style.display = 'none';
-  }, 15000);
-  window.addEventListener('error', function(e){
-    var el = document.getElementById('log');
-    if(el){ var d = document.createElement('div'); d.textContent = 'JS error: ' + (e.message||e.error); el.prepend(d); }
-  });
-</script>
-<script type="module" src="city3d.js"></script>
-</body>
-</html>
+<div class="city-footer"><div class="legend"><span><i class="key drone-key"></i>Drone</span><span><i class="key person-key"></i>Person</span><span><i class="key fire-key"></i>Hazard</span><span><i class="key shelter-key"></i>Station</span></div><div class="renderer-status"><i></i><span id="rendererLabel">Local engine</span></div></div>
+</section>
+<aside class="telemetry-panel panel" aria-label="Mission telemetry">
+<div class="panel-heading"><h2>Live telemetry</h2><span class="live-dot"></span></div>
+<div class="progress-heading"><span>Rescue progress</span><strong id="progressPercent">0%</strong></div><div class="progress-track"><div id="progressFill"></div></div><div class="progress-note"><span id="progressCount">0 of 12 people safe</span><span id="remainingCount">12 remaining</span></div>
+<div class="fleet-heading"><h3>Drone fleet</h3><span>4 units</span></div><div id="fleetList" class="fleet-list"></div>
+<div class="activity-heading"><h3>Activity feed</h3><span id="eventCount">0 events</span></div><div id="activityFeed" class="activity-feed" role="log" aria-label="Mission activity"></div>
+<div class="telemetry-footer"><span class="green-dot"></span> All systems local <span>↗</span></div>
+</aside>
+</div>
+<section id="insightsPanel" class="insights-panel panel" hidden><div class="panel-heading"><div><div class="eyebrow">Mission analysis</div><h2>Routing performance</h2></div><button class="button secondary" id="compareBtn">Compare algorithms</button></div><p>Run each algorithm against the same start, destination and hazard costs.</p><div id="comparisonResults" class="comparison-results"><p>Compare routes to see search effort, route distance and hazard cost.</p></div></section>
+<footer class="workspace-footer"><span><span class="orange-dot"></span> Swarm City <span class="footer-muted">/ Rescue simulation workspace</span></span><span id="footerHint">Ready when you are <kbd>?</kbd> shortcuts</span></footer>
+</main>
+</div>
+<dialog id="helpDialog"><div class="dialog-heading"><h2>Workspace shortcuts</h2><button id="closeHelp" class="icon-btn" aria-label="Close shortcuts">×</button></div><p>Coordinate the fleet and bring every person back to a rescue station.</p><dl><div><dt>Start or pause the mission</dt><dd><kbd>Space</kbd></dd></div><div><dt>Reset the current scenario</dt><dd><kbd>R</kbd></dd></div><div><dt>Fit the city in view</dt><dd><kbd>F</kbd></dd></div><div><dt>Switch 3D / tactical view</dt><dd><kbd>T</kbd></dd></div><div><dt>Close this window</dt><dd><kbd>Esc</kbd></dd></div></dl><p class="dialog-note">This is a synthetic training simulation. Mission reports contain only this session's data.</p></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<script type="module" src="workspace.js"></script>
+</body></html>
